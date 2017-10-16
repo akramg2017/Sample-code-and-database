@@ -1,0 +1,313 @@
+  if ($('#tblEditCompSetpoints tr').length != 0) {
+            tblRows = $('#tblEditCompSetpoints tr').length;
+            
+            for (var i = 1; i < tblRows; i++) {
+                compSetPointID = $("#hdnEditSetpointID" + i).val();
+
+                if ($("#txtEditSetpointValue" + compSetPointID).val() == '' || ($("#txtEditSetpointValue" + compSetPointID).length == 1 & $("#txtEditSetpointValue" + compSetPointID).val() == ".")
+                                                                            || ($("#txtEditSetpointValue" + compSetPointID).length == 1 & $("#txtEditSetpointValue" + compSetPointID).val() == "-")) {
+                    errMsg = errMsg.concat("Missing Set Point value in row ", i, ". Please enter a Set Point value. \n\n");
+                }
+                else if (
+                     /^[0-9.]+-/g.test($("#txtEditSetpointValue" + compSetPointID).val()) ||  //matches if a                      
+                     /^[^\d]*$/g.test($("#txtEditSetpointValue" + compSetPointID).val()))   //matches when there are no number                     
+                 {
+                    errMsg = errMsg.concat("Setpoint Value in row ", i, " has an invalid negative sign. Please enter a valid Setpoint Value. \n\n");
+                }     
+                else {
+                if (parseFloat($("#txtEditSetpointValue" + compSetPointID).val(), 10) > 9999999.999) {
+                        errMsg = errMsg.concat("The Set Point value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+                    }
+                }
+                if ($("#txtEditSpan" + compSetPointID).val() == '' || ($("#txtEditSpan" + compSetPointID).length == 1 & $("#txtEditSpan" + compSetPointID).val() == ".")) {
+                    errMsg = errMsg.concat("Missing Span in row ", i, ". Please enter a Span value. \n\n");
+                } else {
+                if (parseFloat($("#txtEditSpan" + compSetPointID).val(), 10) > 9999999.999) {
+                        errMsg = errMsg.concat("The Span value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Span value no greater than 9999999.999. \n\n");
+                    }
+                }
+                compTypeText = $("#hdnEditSetpointID" + i).val() + '|';
+                compTypeText = compTypeText + $("#txtEditSetpointValue" + compSetPointID).val() + '|';
+                compTypeText = compTypeText + $("#txtEditSpan" + compSetPointID).val() + '|';
+                compTypeText = compTypeText + encodeURIComponent($("#txtEditAction" + compSetPointID).val()) + '|';
+                compTypeText = compTypeText + encodeURIComponent($("#txaEditSetpointDescr" + compSetPointID).text()) + '|';
+                compTypeText = compTypeText + $("#hdnEditSetpointChanged" + compSetPointID).val();
+                compTypeList = compTypeList + compTypeText + ';';
+            }
+        }
+
+        else {
+            // since the tblEditCompSetPoints does not exist check for the tblAddCompSetPoints table because
+            //   the type selction might have changed which would result in the need to add new setpoint values
+            if ($('#tblAddCompSetpoints tr').length != 0) {
+                tblRows = $('#tblAddCompSetpoints tr').length;
+                compTableType = "Add";
+
+                for (var i = 1; i < tblRows; i++) {
+                    if ($("#txtSetpointValue" + i).val() == '' || ($("#txtSetpointValue" + i).length == 1 & $("#txtSetpointValue" + i).val() == ".")
+                                                               || ($("#txtSetpointValue" + i).length == 1 & $("#txtSetpointValue" + i).val() == "-")) {
+                        errMsg = errMsg.concat("Missing Setpoint Value in row ", i, ". Please enter a Setpoint Value. \n\n");
+                    }
+                    else if (/^[0-9.]+-/g.test($("#txtSetpointValue" + i).val()) ||                     
+                             /^[^\d]*$/g.test($("#txtSetpointValue" + i).val())   //matches when there are no number
+                     ) {
+                        errMsg = errMsg.concat("Setpoint Value in row ", i, " has an invalid negative sign. Please enter a valid Setpoint Value. \n\n");
+                    }                   
+                    else {
+                        if (parseFloat($("#txtSetpointValue" + i).val(), 10) > 9999999.999) {
+                            errMsg = errMsg.concat("The Set Point value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+                        }
+                    }
+                    if ($("#txtSpan" + i).val() == '' || ($("#txtSpan" + i).length == 1 & $("#txtSpan" + i).val() == ".")) {
+                        errMsg = errMsg.concat("Missing Span in row ", i, ". Please enter a Span value. \n\n");
+                    } else {
+                        if (parseFloat($("#txtSpan" + i).val(), 10) > 9999999.999) {
+                            errMsg = errMsg.concat("The Span value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Span value no greater than 9999999.999. \n\n");
+                        }
+                    }
+                    compTypeText = $("#txtSetpointValue" + i).val() + '|' + $("#txtSpan" + i).val() + '|' + encodeURIComponent($("#txtAction" + i).val()) + '|' + encodeURIComponent($("#txaEditSetpointDescr" + i).text());
+                    compTypeList = compTypeList + compTypeText + ';';
+                }
+            }
+        }            
+            
+        if (tblRows == 0) {
+            errMsg = errMsg + "Missing Calibration/Setpoint(s) table. Please select a type to produce the appropriate Calibration/Setpoint(s) table. \n\n";
+        }
+    }
+    if (errMsg == "") {
+        $('#btnSaveComponentData').attr('disabled', 'disabled'); //disable multiple clicks
+        gAjax(gAJAXRequest + '/' + 'saveComponentData',
+              { intComponentID: componentID,
+                  strCompName: compName,
+                  strCompDescr: compDescr,
+                  intModelID: modelID,
+                  intDBDocumentID: DBDocumentID,
+                  intTypeID: typeID,
+                  decToleranceLower: toleranceLower,
+                  decToleranceUpper: toleranceUpper,
+                  CompTypeList: compTypeList,
+                  compTableType: compTableType
+              },
+              componentSaveMessage,
+              function() {
+                  $('#btnSaveComponentData').removeAttr('disabled');
+                  $('#btnSaveNewComponent').removeAttr('disabled');
+              }); //onError that occurs when server exception is returned through the ajax call.
+    } else {
+        alert(errMsg);
+    }
+    
+  
+                    
+                    if ($("#txtLowTol" + i).val() == '' || ($("#txtLowTol" + i).length == 1 & $("#txtLowTol" + i).val() == ".")
+                                                               || ($("#txtLowTol" + i).length == 1 & $("#txtLowTol" + i).val() == "-")) 
+                    {
+                        errMsg = errMsg.concat("Missing Setpoint Value in row ", i, ". Please enter a Low Tol. \n\n");
+                    }
+                    else if (/^[0-9.]+-/g.test($("#txtLowTol" + i).val()) ||                     
+                             /^[^\d]*$/g.test($("#txtLowTol" + i).val())   //matches when there are no number
+                     ) {
+                        errMsg = errMsg.concat("Low Tol in row ", i, " has an invalid negative sign. Please enter a valid Low Tol Value. \n\n");
+                       }                   
+                    else 
+                    {
+                        if (parseFloat($("#txtLowTol" + i).val(), 10) > 9999999.999) 
+                        {
+                            errMsg = errMsg.concat("The Low Tol value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+                        }
+                    }
+                    
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    
+                    /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    
+                    if ($("#txtHighTol" + i).val() == '' || ($("#txtHighTol" + i).length == 1 & $("#txtHighTol" + i).val() == ".")
+                                                               || ($("#txtHighTol" + i).length == 1 & $("#txtHighTol" + i).val() == "-")) 
+                    {
+                        errMsg = errMsg.concat("Missing High Tol in row ", i, ". Please enter a High Tol Value. \n\n");
+                    }
+                    else if (/^[0-9.]+-/g.test($("#txtHighTol" + i).val()) ||                     
+                             /^[^\d]*$/g.test($("#txtHighTol" + i).val())   //matches when there are no number
+                     ) {
+                        errMsg = errMsg.concat("High Tol Value in row ", i, " has an invalid negative sign. Please enter a valid Setpoint Value. \n\n");
+                       }                   
+                    else 
+                    {
+                        if (parseFloat($("#txtHighTol" + i).val(), 10) > 9999999.999) 
+                        {
+                            errMsg = errMsg.concat("The High Tolt value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+                        }
+                    }
+                    
+                    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                    
+                    if ($("#txtDeiftLimet" + i).val() == '' || ($("#txtDeiftLimet" + i).length == 1 & $("#txtDeiftLimet" + i).val() == ".")
+                                                               || ($("#txtDeiftLimet" + i).length == 1 & $("#txtDeiftLimet" + i).val() == "-")) 
+                    {
+                        errMsg = errMsg.concat("Missing Deift Limet Value in row ", i, ". Please enter a High Tol Value. \n\n");
+                    }
+                    else if (/^[0-9.]+-/g.test($("#txtDeiftLimet" + i).val()) ||                     
+                             /^[^\d]*$/g.test($("#txtDeiftLimet" + i).val())   //matches when there are no number
+                     ) {
+                        errMsg = errMsg.concat("Setpoint Value in row ", i, " has an invalid negative sign. Please enter a valid Deift Limet Value. \n\n");
+                       }                   
+                    else 
+                    {
+                        if (parseFloat($("#txtDeiftLimet" + i).val(), 10) > 9999999.999) 
+                        {
+                            errMsg = errMsg.concat("The Deift Limet value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+                        }
+                    }
+                    
+                    
+                    compTypeText = $("#txtSetpointValue" + i).val() + '|' + $("#txtSpan" + i).val() + '|' + encodeURIComponent($("#txtAction" + i).val()) + '|' + encodeURIComponent($("#textunits" + i).val()) + '|' +  $("#chackAsFoundReq" + i).val()  + '|' +  $("#chackAsLeftReq" + i).val()   + '|'+ $("#txtLowTol" + i).val()  + '|'  + $("#txthighTol" + i).val()  + '|' + $("#txtDeiftLimet" + i).val()  + '|'  +  encodeURIComponent($("#txaEditSetpointDescr" + i).text());
+                    compTypeList = compTypeList + compTypeText + ';';
+                
+            }
+               }
+            }
+  
+    //else
+  //  { 
+    //------------------------------------------------------------------------------------------
+   //     if ($('#tblEditCompSetpoints tr').length != 0) {
+     //       tblRows = $('#tblEditCompSetpoints tr').length;
+   //         
+   //         for (var i = 1; i < tblRows; i++) {
+   //             compSetPointID = $("#hdnEditSetpointID" + i).val();
+
+   //             if ($("#txtEditSetpointValue" + compSetPointID).val() == '' || ($("#txtEditSetpointValue" + compSetPointID).length == 1 & $("#txtEditSetpointValue" + compSetPointID).val() == ".")
+       //                                                                     || ($("#txtEditSetpointValue" + compSetPointID).length == 1 & $("#txtEditSetpointValue" + compSetPointID).val() == "-")) {
+     //               errMsg = errMsg.concat("Missing Set Point value in row ", i, ". Please enter a Set Point value. \n\n");
+       //         }
+           //     else if (
+         //  //          /^[0-9.]+-/g.test($("#txtEditSetpointValue" + compSetPointID).val()) ||  //matches if a                      
+               //      /^[^\d]*$/g.test($("#txtEditSetpointValue" + compSetPointID).val()))   //matches when there are no number                     
+         //        {
+           //         errMsg = errMsg.concat("Setpoint Value in row ", i, " has an invalid negative sign. Please enter a valid Setpoint Value. \n\n");
+          //      }     
+         //       else {
+         //       if (parseFloat($("#txtEditSetpointValue" + compSetPointID).val(), 10) > 9999999.999) {
+          //              errMsg = errMsg.concat("The Set Point value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+           //         }
+           //     }
+           //     if ($("#txtEditSpan" + compSetPointID).val() == '' || ($("#txtEditSpan" + compSetPointID).length == 1 & $("#txtEditSpan" + compSetPointID).val() == ".")) {
+           //         errMsg = errMsg.concat("Missing Span in row ", i, ". Please enter a Span value. \n\n");
+          //      } else {
+          //      if (parseFloat($("#txtEditSpan" + compSetPointID).val(), 10) > 9999999.999) {
+          //              errMsg = errMsg.concat("The Span value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Span value no greater than 9999999.999. \n\n");
+          //          }
+          //      }
+          //      compTypeText = $("#hdnEditSetpointID" + i).val() + '|';
+          //      compTypeText = compTypeText + $("#txtEditSetpointValue" + compSetPointID).val() + '|';
+          //      compTypeText = compTypeText + $("#txtEditSpan" + compSetPointID).val() + '|';
+          //      compTypeText = compTypeText + encodeURIComponent($("#txtEditAction" + compSetPointID).val()) + '|';
+          //      compTypeText = compTypeText + encodeURIComponent($("#txaEditSetpointDescr" + compSetPointID).text()) + '|';
+          //      compTypeText = compTypeText + $("#hdnEditSetpointChanged" + compSetPointID).val();
+          //      compTypeList = compTypeList + compTypeText + ';';
+         //   }
+       // }
+
+      //  else {
+            // since the tblEditCompSetPoints does not exist check for the tblAddCompSetPoints table because
+            //   the type selction might have changed which would result in the need to add new setpoint values
+        //    if ($('#tblAddCompSetpoints tr').length != 0) {
+          //      tblRows = $('#tblAddCompSetpoints tr').length;
+         //       compTableType = "Add";
+//
+  //              for (var i = 1; i < tblRows; i++) {
+    //                if ($("#txtSetpointValue" + i).val() == '' || ($("#txtSetpointValue" + i).length == 1 & $("#txtSetpointValue" + i).val() == ".")
+      //                                                         || ($("#txtSetpointValue" + i).length == 1 & $("#txtSetpointValue" + i).val() == "-")) {
+        //                errMsg = errMsg.concat("Missing Setpoint Value in row ", i, ". Please enter a Setpoint Value. \n\n");
+          //          }
+            //        else if (/^[0-9.]+-/g.test($("#txtSetpointValue" + i).val()) ||                     
+              //               /^[^\d]*$/g.test($("#txtSetpointValue" + i).val())   //matches when there are no number
+             //        ) {
+            //            errMsg = errMsg.concat("Setpoint Value in row ", i, " has an invalid negative sign. Please enter a valid Setpoint Value. \n\n");
+             //       }                   
+            //        else {
+            //            if (parseFloat($("#txtSetpointValue" + i).val(), 10) > 9999999.999) {
+           //                 errMsg = errMsg.concat("The Set Point value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+            //            }
+          //          }
+        //            if ($("#txtSpan" + i).val() == '' || ($("#txtSpan" + i).length == 1 & $("#txtSpan" + i).val() == ".")) {
+        //                errMsg = errMsg.concat("Missing Span in row ", i, ". Please enter a Span value. \n\n");
+        //            } else {
+          //              if (parseFloat($("#txtSpan" + i).val(), 10) > 9999999.999) {
+            //                errMsg = errMsg.concat("The Span value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Span value no greater than 9999999.999. \n\n");
+              //          }
+         //           }
+            //        compTypeText = $("#txtSetpointValue" + i).val() + '|' + $("#txtSpan" + i).val() + '|' + encodeURIComponent($("#txtAction" + i).val()) + '|' + encodeURIComponent($("#txaEditSetpointDescr" + i).text());
+          //          compTypeList = compTypeList + compTypeText + ';';
+              //  }
+          //  }
+     //   }            
+            
+   //     if (tblRows == 0) {
+     //       errMsg = errMsg + "Missing Calibration/Setpoint(s) table. Please select a type to produce the appropriate Calibration/Setpoint(s) table. \n\n";
+       // }
+    }
+    if (errMsg == "") {
+        $('#btnSaveComponentData').attr('disabled', 'disabled'); //disable multiple clicks
+        gAjax(gAJAXRequest + '/' + 'saveComponentData',
+              { intComponentID: componentID,
+                  strCompName: compName,
+                  strCompDescr: compDescr,
+                  intModelID: modelID,
+                  intDBDocumentID: DBDocumentID,
+                  intTypeID: typeID,
+                  decToleranceLower: toleranceLower,
+                  decToleranceUpper: toleranceUpper,
+                  CompTypeList: compTypeList,
+                  compTableType: compTableType
+              },
+              componentSaveMessage,
+              function() {
+                  $('#btnSaveComponentData').removeAttr('disabled');
+                  $('#btnSaveNewComponent').removeAttr('disabled');
+              }); //onError that occurs when server exception is returned through the ajax call.
+    } else {
+        alert(errMsg);
+    }
+} ///--------------88
+----------------------------------------------------------------------------------------------------------------
+    if (compName == "") {
+        errMsg = errMsg + "Missing Component Name. Please enter/select a Component Name. \n\n";
+    }
+
+    if (modelID == 0) {
+    
+        if ($('#txtEditComponentModel').val() == "") {
+            errMsg = errMsg + "Missing Model. Please enter/select a Model. \n\n";
+        } else {
+            errMsg = errMsg + "Invalid Model. Please enter at least 3 characters in the Model field and select a Model from the provided list. \n\n";
+        }
+    }
+
+
+    if (DBDocumentID == 0) {
+        errMsg = errMsg + "Please select a Drift Limit Basis Document. \n\n";
+    }
+
+    if (parseFloat(toleranceLower, 10) > 9999999.999) {
+        errMsg = errMsg + "Lower Tolerance value entered exceeds maximum allowable value of 9999999.999. Please enter a Lower Tolerance value no greater than 9999999.999. \n\n";
+        $("#txtEditCompToleranceLower").val('');
+    } else {
+        if (toleranceLower == "" || (toleranceLower.length == 1 & toleranceLower == ".")) {
+            errMsg = errMsg + "Missing Lower Tolerance value. Please enter the Lower Tolerance value. \n\n";
+        }
+    }
+
+    if (parseFloat(toleranceUpper, 10) > 9999999.999) {
+        errMsg = errMsg + "Upper Tolerance value entered exceeds maximum allowable value of 9999999.999. Please enter an Upper Tolerance value no greater than 9999999.999. \n\n";
+        $("#txtEditCompToleranceUpper").val('');
+    } else {
+        if (toleranceUpper == "" || (toleranceUpper.length == 1 & toleranceUpper == ".")) {
+            errMsg = errMsg + "Missing Upper Tolerance value. Please enter the Upper Tolerance value. \n\n";
+        }
+    }
+
+    if (compDescr == "") {
+        errMsg = errMsg + "Missing Description. Please enter the Description text. \n\n";
+        }
