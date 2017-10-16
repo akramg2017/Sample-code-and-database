@@ -1,0 +1,115 @@
+function clickAddComponent() {
+    var compTypeText;
+    var compTypeList = "";
+    var tblRows = 0;
+    var errMsg = "";
+    
+    var compName = $('#txtEditComponentName').val();
+    var modelID =  $('#hdnModelID').val();      
+    var DBDocumentID =  $('#ddlEditCompDBDocument').val();      
+    var typeID =  $('#ddlEditCompType').val();      
+    var toleranceLower =  $('#txtEditCompToleranceLower').val();      
+    var toleranceUpper =  $('#txtEditCompToleranceUpper').val();
+    var compDescr = $('#txaEditCompDescr').val();
+
+    if (compName == "") {
+        errMsg = errMsg + "Missing Component Name. Please enter/select a Component Name. \n\n";
+    }
+
+    if (modelID == 0) {
+        if ($('#txtEditComponentModel').val() == "") {
+            errMsg = errMsg + "Missing Model. Please enter/select a Model. \n\n";
+        } else {
+            errMsg = errMsg + "Invalid Model. Please enter at least 3 characters in the Model field and select a Model from the provided list. \n\n";
+        }
+    }
+
+    if (DBDocumentID == 0) {
+        errMsg = errMsg + "Please select a Drift Limit Basis Document. \n\n";
+    }
+
+    if (parseFloat(toleranceLower, 10) > 9999999.999) {
+        errMsg = errMsg + "Lower Tolerance value entered exceeds maximum allowable value of 9999999.999. Please enter a Lower Tolerance value no greater than 9999999.999. \n\n";
+        $("#txtEditCompToleranceLower").val('');
+    } else {
+        if (toleranceLower == "" || (toleranceLower.length == 1 & toleranceLower == ".")) {
+            errMsg = errMsg + "Missing Lower Tolerance value. Please enter the Lower Tolerance value. \n\n";
+        }
+    }
+
+    if (parseFloat(toleranceUpper, 10) > 9999999.999) {
+        errMsg = errMsg + "Upper Tolerance value entered exceeds maximum allowable value of 9999999.999. Please enter an Upper Tolerance value no greater than 9999999.999. \n\n";
+        $("#txtEditCompToleranceUpper").val('');
+    } else {
+        if (toleranceUpper == "" || (toleranceUpper.length == 1 & toleranceUpper == ".")) {
+            errMsg = errMsg + "Missing Upper Tolerance value. Please enter the Upper Tolerance value. \n\n";
+        }
+    }
+
+    if (compDescr == "") {
+        errMsg = errMsg + "Missing Description. Please enter the Description text. \n\n";
+    }
+
+    if (typeID == 0) {
+        errMsg = errMsg + "Please select a type to produce the appropriate Calibration/Setpoint(s) table. \n\n";
+    }
+    else {
+        if ($('#tblAddCompSetpoints tr').length != 0) {
+            tblRows = $('#tblAddCompSetpoints tr').length;
+        }
+
+        if (tblRows == 0) {
+            errMsg = errMsg + "Missing Calibration/Setpoint(s) table. Please select a type to produce the appropriate Calibration/Setpoint(s) table. \n\n";
+        }
+
+        for (var i = 1; i < tblRows; i++) {
+        
+            if ($("#txtSetpointValue" + i).val() == '' || ($("#txtSetpointValue" + i).length == 1 & $("#txtSetpointValue" + i).val() == ".")) {
+                errMsg = errMsg.concat("Missing Set Point value in row ", i, ". Please enter a Set Point value. \n\n");
+            }
+            else if (/^[0-9.]+-/g.test($("#txtSetpointValue" + i).val()) ||                     
+                     /^[^\d]*$/g.test($("#txtSetpointValue" + i).val())    //matches when there are no number
+                     ) 
+                     {
+                errMsg = errMsg.concat("Setpoint Value in row ", i, " has an invalid negative sign. Please enter a valid Setpoint Value. \n\n");
+            } 
+            else {
+                if (parseFloat($("#txtSetpointValue" + i).val(), 10) > 9999999.999) {
+                    errMsg = errMsg.concat("The Set Point value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Set Point value no greater than 9999999.999. \n\n");
+                }
+            }
+            if ($("#txtSpan" + i).val() == '' || ($("#txtSpan" + i).length == 1 & $("#txtSpan" + i).val() == ".")) {
+                errMsg = errMsg.concat("Missing Span in row ", i, ". Please enter a Span value. \n\n");
+            } else {
+                if (parseFloat($("#txtSpan" + i).val(), 10) > 9999999.999) {
+                    errMsg = errMsg.concat("The Span value in row ", i, " exceeds the maximum allowable value of 9999999.999. Please enter a Span value no greater than 9999999.999. \n\n");
+                }
+            }
+            compTypeText = $("#txtSetpointValue" + i).val() + '|' + $("#txtSpan" + i).val() + '|' + encodeURIComponent($("#txtAction" + i).val()) + '|' + encodeURIComponent($("#txaEditSetpointDescr" + i).text());
+            compTypeList = compTypeList + compTypeText + ';';
+        }
+    }
+    if (errMsg == "") {
+        $('#btnSaveNewComponent').attr('disabled', 'disabled'); //disable multiple clicks
+        gAjax(gAJAXRequest + '/' + 'saveNewComponent',
+              { strCompName: compName,
+                  strCompDescr: compDescr,
+                  intModelID: modelID,
+                  intDBDocumentID: DBDocumentID,
+                  intTypeID: typeID,
+                  decToleranceLower: toleranceLower,
+                  decToleranceUpper: toleranceUpper,
+                  CompTypeList: compTypeList
+              },
+              componentAddMessage,
+              function() {
+                  $('#btnSaveNewComponent').removeAttr('disabled');
+                  $('#btnSaveComponentData').removeAttr('disabled');
+              }); //onError allow the button to be clicked again (server exception).
+    } else {
+        alert(errMsg);
+    }
+}
+
+
+
